@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Basic</string>
+    <string name="title_home">Home</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_notifications">Notifications</string>
+    <string name="select_images">Select Images</string>
+
+    <string name="permission_required">Media access is required to display the Gallery preview.</string>
+    <string name="ok">OK</string>
+    <string name="permission_granted">Permission is granted. You can use the Gallery now.</string>
+</resources>
