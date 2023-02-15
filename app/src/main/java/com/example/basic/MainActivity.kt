@@ -1,13 +1,22 @@
 package com.example.basic
 
+import android.Manifest
 import android.os.Bundle
+import android.widget.Toast
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.example.basic.databinding.ActivityMainBinding
+import com.karumi.dexter.Dexter
+import com.karumi.dexter.PermissionToken
+import com.karumi.dexter.listener.PermissionDeniedResponse
+import com.karumi.dexter.listener.PermissionGrantedResponse
+import com.karumi.dexter.listener.PermissionRequest
+import com.karumi.dexter.listener.single.PermissionListener
 
 class MainActivity : AppCompatActivity() {
 

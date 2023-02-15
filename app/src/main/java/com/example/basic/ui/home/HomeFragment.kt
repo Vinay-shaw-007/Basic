@@ -4,25 +4,36 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.Image
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.provider.MediaStore
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.activity.result.ActivityResult
-import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.GridLayoutManager
+import com.example.basic.ImageRecyclerView
 import com.example.basic.R
 import com.example.basic.databinding.FragmentHomeBinding
+import com.example.basic.db.ImageEntity
+import com.karumi.dexter.Dexter
+import com.karumi.dexter.PermissionToken
+import com.karumi.dexter.listener.PermissionDeniedResponse
+import com.karumi.dexter.listener.PermissionGrantedResponse
+import com.karumi.dexter.listener.PermissionRequest
+import com.karumi.dexter.listener.single.PermissionListener
+import kotlinx.coroutines.flow.collectLatest
 import java.io.File
 
 
@@ -34,126 +45,116 @@ class HomeFragment : Fragment() {
     // onDestroyView.
     private val binding get() = _binding!!
 
-    private lateinit var imageUri: Uri
+    private lateinit var adapter: ImageRecyclerView
+
+    private lateinit var homeViewModel: HomeViewModel
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val homeViewModel =
-            ViewModelProvider(this).get(HomeViewModel::class.java)
+
+        homeViewModel = ViewModelProvider(this)[HomeViewModel::class.java]
 
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
-        val root: View = binding.root
 
-        return root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        imageUri = createImageUri()
         binding.getImages.setOnClickListener {
-            requestPermission()
-        }
-    }
 
-    private val contract = registerForActivityResult(ActivityResultContracts.TakePicture()){
-        binding.imageView.setImageURI(null)
-        binding.imageView.setImageURI(imageUri)
-    }
-
-    private fun createImageUri(): Uri {
-        val image = File(requireActivity().filesDir, "camera_photos")
-        return FileProvider.getUriForFile(
-            requireActivity(),
-            "com.example.basic.fileProvider",
-            image
-        )
-    }
-
-    private fun requestPermission() {
-        when {
-            ContextCompat.checkSelfPermission(
-                requireActivity(),
-                Manifest.permission.CAMERA
-            ) == PackageManager.PERMISSION_GRANTED -> {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.permission_granted),
-                    Toast.LENGTH_LONG
-                ).show()
-                contract.launch(imageUri)
-            }
-
-            ActivityCompat.shouldShowRequestPermissionRationale(
-                requireActivity(),
-                Manifest.permission.CAMERA
-            ) -> {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.permission_required),
-                    Toast.LENGTH_LONG
-                ).show()
-                requestPermissionLauncher.launch(
-                    Manifest.permission.CAMERA
-                )
-
-            }
-            else -> {
-                requestPermissionLauncher.launch(
-                    Manifest.permission.CAMERA
-                )
-            }
-        }
-    }
-
-    private val requestPermissionLauncher =
-        registerForActivityResult(
-            ActivityResultContracts.RequestPermission()
-        ) { isGranted: Boolean ->
-            if (isGranted) {
-                Log.i("Permission: ", "Granted")
-                contract.launch(imageUri)
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.S) {
+                selectImage()
             } else {
-                Log.i("Permission: ", "Denied")
+                dexterRequestPermission()
             }
         }
 
+        binding.recyclerView.layoutManager = GridLayoutManager(requireContext(), 3)
+        adapter = ImageRecyclerView()
+        binding.recyclerView.adapter = adapter
 
-//    private fun selectImageFromGallery() {
-//        if (ContextCompat.checkSelfPermission(
-//                requireActivity(),
-//                Manifest.permission.READ_EXTERNAL_STORAGE
-//            ) != PackageManager.PERMISSION_GRANTED
-//        ) {
-//            ActivityCompat.requestPermissions(
-//                requireActivity(),
-//                arrayOf<String>(Manifest.permission.READ_EXTERNAL_STORAGE),
-//                101
-//            )
-//        } else {
-//            selectImage()
-//        }
-//        selectImage()
-//    }
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                homeViewModel.allImages.collectLatest {
+                    Log.d("Database List", it.toString())
+                    adapter.setData(it)
+                    adapter.notifyDataSetChanged()
+                }
+            }
+        }
 
-//    private fun selectImage() {
-//        Intent().apply {
-//            type = "image/*"
-//            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-//            requestFile.launch(this)
-//        }
-//    }
+    }
 
-//    private val requestFile = registerForActivityResult(
-//        ActivityResultContracts.StartActivityForResult()
-//    ) {
-//        if (it.resultCode == Activity.RESULT_OK && it.data != null) {
-//            val data = it.data
-//            Log.d("Data", data.toString())
-//        }
-//    }
+    private val requestFile = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        if (it.resultCode == Activity.RESULT_OK && it.data != null) {
+            val data = it.data
+            Log.d("Get_selected_data", data.toString())
+            data?.let {
+                if (data.clipData != null) {
+                    //If multiple images chosen
+                    val count = data.clipData!!.itemCount
+                    val imageList: ArrayList<ImageEntity> = ArrayList()
+                    for (i in 0 until count) {
+                        val imageUri = data.clipData!!.getItemAt(i).uri.toString()
+                        imageList.add(ImageEntity(imageUri))
+                    }
+                    homeViewModel.insertImageList(imageList)
+
+                } else {
+                    //If single image chosen
+                    val imageUri = data.data.toString()
+                    homeViewModel.insertSingleImage(ImageEntity(imageUri))
+                }
+            }
+        }
+    }
+
+    private fun selectImage() {
+        Intent().apply {
+            type = "image/*"
+            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+            action = Intent.ACTION_GET_CONTENT
+            requestFile.launch(this)
+        }
+    }
+
+
+    private fun dexterRequestPermission() {
+        Dexter.withContext(activity)
+            .withPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
+            .withListener(object : PermissionListener {
+                override fun onPermissionGranted(p0: PermissionGrantedResponse?) {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.permission_granted),
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+
+                override fun onPermissionDenied(p0: PermissionDeniedResponse?) {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.permission_required),
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+
+                override fun onPermissionRationaleShouldBeShown(
+                    p0: PermissionRequest?,
+                    p1: PermissionToken?
+                ) {
+                    p1?.continuePermissionRequest()
+                }
+
+            })
+            .check()
+    }
 
 
     override fun onDestroyView() {
