@@ -12,7 +12,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.basic.db.ImageEntity
 
-class ImageRecyclerView : RecyclerView.Adapter<ImageRecyclerView.ImageViewHolder>() {
+class ImageRecyclerView(private val listener: ImageRVAdapter) : RecyclerView.Adapter<ImageRecyclerView.ImageViewHolder>() {
 
     private lateinit var context: Context
 
@@ -30,6 +30,7 @@ class ImageRecyclerView : RecyclerView.Adapter<ImageRecyclerView.ImageViewHolder
         val inflater = LayoutInflater.from(parent.context)
         context = parent.context
         val view = inflater.inflate(R.layout.single_image_item, parent, false)
+
         return ImageViewHolder(view)
     }
 
@@ -38,6 +39,13 @@ class ImageRecyclerView : RecyclerView.Adapter<ImageRecyclerView.ImageViewHolder
     }
 
     override fun onBindViewHolder(holder: ImageViewHolder, position: Int) {
+        Log.d("Adapter", uriImageList[position].imageUri.toUri().toString())
         Glide.with(context).load(uriImageList[position].imageUri.toUri()).into(holder.imageView)
+        holder.imageView.setOnClickListener {
+            listener.onItemClicked(uriImageList[position])
+        }
     }
+}
+interface ImageRVAdapter{
+    fun onItemClicked(imageEntity: ImageEntity)
 }

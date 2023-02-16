@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/imageDetailsFragment"
+        android:icon="@drawable/info_24"
+        android:title="@string/image_details" />
+</menu>

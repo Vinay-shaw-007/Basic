@@ -12,4 +12,8 @@ class ImageRepository(private val imageDao: ImageDao) {
     suspend fun insertSingleImage(singleImageEntity: ImageEntity) {
         imageDao.insertSingleImage(singleImageEntity)
     }
+
+    fun getSpecificImageDetails(imageId: Int): Flow<ImageEntity> {
+        return imageDao.getSpecificImageDetails(imageId)
+    }
 }

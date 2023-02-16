@@ -14,4 +14,7 @@ interface ImageDao {
     @Transaction
     @Query("Select * From ImageList")
     fun getAllMessages(): Flow<List<ImageEntity>>
+
+    @Query("Select * from ImageList where id = :imageId")
+    fun getSpecificImageDetails(imageId: Int) : Flow<ImageEntity>
 }

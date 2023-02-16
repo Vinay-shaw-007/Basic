@@ -9,7 +9,11 @@
         android:id="@+id/navigation_home"
         android:name="com.example.basic.ui.home.HomeFragment"
         android:label="@string/title_home"
-        tools:layout="@layout/fragment_home" />
+        tools:layout="@layout/fragment_home" >
+        <action
+            android:id="@+id/action_navigation_home_to_imageDetailsFragment"
+            app:destination="@id/imageDetailsFragment" />
+    </fragment>
 
     <fragment
         android:id="@+id/navigation_dashboard"
@@ -22,4 +26,35 @@
         android:name="com.example.basic.ui.notifications.NotificationsFragment"
         android:label="@string/title_notifications"
         tools:layout="@layout/fragment_notifications" />
+    <fragment
+        android:id="@+id/imageDetailsFragment"
+        android:name="com.example.basic.ui.imageDetails.ImageDetailsFragment"
+        android:label="@string/image_details"
+        tools:layout="@layout/fragment_image_details" >
+        <argument
+            android:name="ImageID"
+            app:argType="integer" />
+        <argument
+            android:name="ImageSize"
+            app:argType="string" />
+        <argument
+            android:name="ImageFileName"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_imageDetailsFragment_to_imageDetailsDialog"
+            app:destination="@id/imageDetailsDialog" >
+        </action>
+    </fragment>
+    <dialog
+        android:id="@+id/imageDetailsDialog"
+        android:name="com.example.basic.dialog.ImageDetailsDialog"
+        android:label="@string/image_detail_dialog"
+        tools:layout="@layout/fragment_image_details_dialog" >
+        <argument
+            android:name="ImageSize"
+            app:argType="string" />
+        <argument
+            android:name="ImageFileName"
+            app:argType="string" />
+    </dialog>
 </navigation>

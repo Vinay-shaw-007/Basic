@@ -8,4 +8,9 @@
     <string name="permission_required">Media access is required to display the Gallery preview.</string>
     <string name="ok">OK</string>
     <string name="permission_granted">Permission is granted. You can use the Gallery now.</string>
+    <string name="image_details">Image Details</string>
+    <string name="todo">TODO</string>
+    <string name="image_detail_dialog">Image Details Dialog</string>
+    <string name="size">Size %s mb</string>
+    <string name="file_name">File Name: %s</string>
 </resources>
