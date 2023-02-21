@@ -10,6 +10,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        gradlePluginPortal() // add this new line
     }
 }
 rootProject.name = "Basic"

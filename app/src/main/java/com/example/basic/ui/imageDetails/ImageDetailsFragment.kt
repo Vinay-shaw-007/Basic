@@ -39,8 +39,8 @@ class ImageDetailsFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentImageDetailsBinding.inflate(inflater, container, false)
         viewModel = ViewModelProvider(this)[ImageDetailsViewModel::class.java]
+        _binding = FragmentImageDetailsBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -64,5 +64,10 @@ class ImageDetailsFragment : Fragment() {
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        _binding = null
     }
 }

@@ -20,7 +20,6 @@ import com.example.basic.ui.imageDetails.ImageDetailsFragmentArgs
 
 class ImageDetailsDialog : DialogFragment() {
 
-    private lateinit var viewModel: ImageDetailsDialogViewModel
 
     private val arguments by navArgs<ImageDetailsDialogArgs>()
 
@@ -34,7 +33,6 @@ class ImageDetailsDialog : DialogFragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        viewModel = ViewModelProvider(this)[ImageDetailsDialogViewModel::class.java]
         _binding = FragmentImageDetailsDialogBinding.inflate(inflater, container, false)
 
         return binding.root
@@ -52,7 +50,6 @@ class ImageDetailsDialog : DialogFragment() {
         binding.imageSize.text = getString(R.string.size, arguments.imageSize)
         binding.imageFileName.text = getString(R.string.file_name, arguments.imageFileName)
 
-//        Log.d("Details Image", arguments.imageSize + arguments.imageFileName)
     }
 
 }

@@ -2,11 +2,11 @@ package com.example.basic.ui.home
 
 import android.Manifest
 import android.app.Activity
+import android.content.ContentResolver
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Log
 import android.view.LayoutInflater
@@ -22,11 +22,15 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.basic.ImageRVAdapter
 import com.example.basic.ImageRecyclerView
 import com.example.basic.R
+import com.example.basic.Utils.DOCUMENT_FILE
+import com.example.basic.Utils.IMAGE_FILE
+import com.example.basic.Utils.VIDEO_FILE
 import com.example.basic.databinding.FragmentHomeBinding
-import com.example.basic.db.ImageEntity
+import com.example.basic.db.FilesEntity
 import com.karumi.dexter.Dexter
 import com.karumi.dexter.PermissionToken
 import com.karumi.dexter.listener.PermissionDeniedResponse
@@ -49,6 +53,9 @@ class HomeFragment : Fragment(), ImageRVAdapter {
 
     private lateinit var homeViewModel: HomeViewModel
 
+
+
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -64,6 +71,7 @@ class HomeFragment : Fragment(), ImageRVAdapter {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
         binding.getImages.setOnClickListener {
 
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.S) {
@@ -73,7 +81,7 @@ class HomeFragment : Fragment(), ImageRVAdapter {
             }
         }
 
-        binding.recyclerView.layoutManager = GridLayoutManager(requireContext(), 3)
+        binding.recyclerView.layoutManager = GridLayoutManager(requireContext(), 2)
         adapter = ImageRecyclerView(this)
         binding.recyclerView.adapter = adapter
 
@@ -86,7 +94,6 @@ class HomeFragment : Fragment(), ImageRVAdapter {
                 }
             }
         }
-
     }
 
     private val requestFile = registerForActivityResult(
@@ -98,7 +105,7 @@ class HomeFragment : Fragment(), ImageRVAdapter {
                 if (data.clipData != null) {
                     //If multiple images chosen
                     val count = data.clipData!!.itemCount
-                    val imageList: ArrayList<ImageEntity> = ArrayList()
+                    val imageList: ArrayList<FilesEntity> = ArrayList()
                     for (i in 0 until count) {
                         val imageUri = data.clipData!!.getItemAt(i).uri.toString()
 
@@ -115,26 +122,21 @@ class HomeFragment : Fragment(), ImageRVAdapter {
         }
     }
 
-    private fun getFileUri(imageUri: Uri): Uri? {
-        val contentResolver = requireActivity().contentResolver
-        val projection = arrayOf(MediaStore.Images.Media.DISPLAY_NAME)
-        val cursor = contentResolver.query(imageUri, projection, null, null, null)
-        cursor?.use {
-            if (it.moveToFirst()) {
-                val nameColumnIndex = it.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME)
-                if (nameColumnIndex >= 0) {
-                    val displayName = it.getString(nameColumnIndex)
-                    val contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-                    return contentUri.buildUpon().appendPath(displayName).build()
-                } else {
-                    // handle the case where the column does not exist
-                }
-            }
+    private fun getFileType(contentResolver: ContentResolver, uri: Uri) : String {
+        val mimeType = contentResolver.getType(uri)
+        if (mimeType?.startsWith("image/") == true) {
+            return IMAGE_FILE
         }
-        return null
+        if (mimeType?.startsWith("video/") == true) {
+            return VIDEO_FILE
+        }
+        if (mimeType?.startsWith("application/pdf") == true) {
+            return DOCUMENT_FILE
+        }
+        return ""
     }
 
-    private fun getFileNameAndSize(imageUri: String): ImageEntity {
+    private fun getFileNameAndSize(imageUri: String): FilesEntity {
         val cursor =
             context?.contentResolver?.query(imageUri.toUri(), null, null, null, null)
         cursor?.use {
@@ -143,25 +145,34 @@ class HomeFragment : Fragment(), ImageRVAdapter {
                 val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                 val fileName = cursor.getString(nameIndex)
 
+                //Get the file type
+                val fileType = context?.contentResolver?.let { it1 -> getFileType(it1,imageUri.toUri()) }
+
                 //Get the size of the file
                 val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
                 val size = cursor.getLong(sizeIndex)
                 val sizeInMb = size.toDouble() / (1024.0 * 1024.0)
                 val decimalFormat = DecimalFormat("#.###")
                 val sizeInMbFormatted = decimalFormat.format(sizeInMb)
-
-                return ImageEntity(imageUri, fileName, sizeInMbFormatted)
+                Log.d("Video Details", fileName.toString())
+                Log.d("Video Details", sizeInMbFormatted.toString())
+                Log.d("Video Details", fileType!!)
+                return FilesEntity(imageUri, fileName, sizeInMbFormatted, 0, fileType)
             }
         }
         cursor?.close()
-        return ImageEntity(imageUri, "", "")
+        return FilesEntity(imageUri, "", "", 0,"")
     }
 
     private fun selectImage() {
         Intent().apply {
-            type = "image/*"
-            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
             action = Intent.ACTION_OPEN_DOCUMENT
+            type = "*/*"
+            addCategory(Intent.CATEGORY_OPENABLE)
+            putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*", "video/*", "application/pdf"))
+            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+            flags = Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
             requestFile.launch(this)
         }
     }
@@ -172,11 +183,6 @@ class HomeFragment : Fragment(), ImageRVAdapter {
             .withPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
             .withListener(object : PermissionListener {
                 override fun onPermissionGranted(p0: PermissionGrantedResponse?) {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.permission_granted),
-                        Toast.LENGTH_LONG
-                    ).show()
                     selectImage()
                 }
 
@@ -205,12 +211,92 @@ class HomeFragment : Fragment(), ImageRVAdapter {
         _binding = null
     }
 
-    override fun onItemClicked(imageEntity: ImageEntity) {
+    override fun onItemClicked(filesEntity: FilesEntity) {
         val action = HomeFragmentDirections.actionNavigationHomeToImageDetailsFragment(
-            imageEntity.id,
-            imageEntity.imageSize,
-            imageEntity.imageFileName
+            filesEntity.id,
+            filesEntity.imageSize,
+            filesEntity.imageFileName
         )
         findNavController().navigate(action)
     }
+
+    override fun onStarClicked(filesEntity: FilesEntity, holder: RecyclerView.ViewHolder) {
+        val newFilesEntity: FilesEntity = if (filesEntity.imageStarred == 0) {
+            FilesEntity(
+                filesEntity.imageUri,
+                filesEntity.imageFileName,
+                filesEntity.imageSize,
+                1,
+                filesEntity.fileType,
+                filesEntity.id
+            )
+        } else {
+            FilesEntity(
+                filesEntity.imageUri,
+                filesEntity.imageFileName,
+                filesEntity.imageSize,
+                0,
+                filesEntity.fileType,
+                filesEntity.id
+            )
+        }
+        when (holder) {
+            is ImageRecyclerView.ImageViewHolder -> {
+                if (newFilesEntity.imageStarred == 0) {
+                    holder.starBtn.setImageResource(R.drawable.baseline_star_border_24)
+                } else {
+                    holder.starBtn.setImageResource(R.drawable.baseline_star_24)
+                }
+            }
+            is ImageRecyclerView.VideoViewHolder -> {
+                if (newFilesEntity.imageStarred == 0) {
+                    holder.starBtn.setImageResource(R.drawable.baseline_star_border_24)
+                } else {
+                    holder.starBtn.setImageResource(R.drawable.baseline_star_24)
+                }
+            }
+            is ImageRecyclerView.DocumentViewHolder -> {
+                if (newFilesEntity.imageStarred == 0) {
+                    holder.starBtn.setImageResource(R.drawable.baseline_star_border_24)
+                } else {
+                    holder.starBtn.setImageResource(R.drawable.baseline_star_24)
+                }
+            }
+        }
+        homeViewModel.updateImageEntity(newFilesEntity)
+    }
+
+    override fun onDeleteClicked(filesEntity: FilesEntity) {
+        homeViewModel.deleteImageEntity(filesEntity)
+    }
+
+    override fun onPdfClicked(filesEntity: FilesEntity) {
+//        val uri = filesEntity.imageUri.toUri()
+//        val contentResolver = context?.contentResolver
+//        val inputStream = contentResolver?.openInputStream(uri)
+//        val file = File.createTempFile("pdf", ".pdf", context?.cacheDir)
+//        val outputStream = FileOutputStream(file)
+//        inputStream?.copyTo(outputStream)
+//
+//        val intent = Intent(Intent.ACTION_VIEW)
+//        val uri1 = Uri.fromFile(file)
+//        intent.setDataAndType(uri1, "application/pdf")
+//        intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_CLEAR_TOP
+//
+//        try {
+//            startActivity(intent)
+//        } catch (e: ActivityNotFoundException) {
+//            // Handle the error
+//            Log.d("OpenPDF", e.message.toString())
+//        }
+        findNavController().navigate(HomeFragmentDirections.actionNavigationHomeToPDFFragment(filesEntity.id))
+    }
+
+
+    override fun onVideoClicked(filesEntity: FilesEntity) {
+        val action = HomeFragmentDirections.actionNavigationHomeToVideoPlayerActivity(filesEntity.imageUri)
+        findNavController().navigate(action)
+    }
+
+
 }

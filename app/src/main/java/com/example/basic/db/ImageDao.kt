@@ -6,15 +6,24 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ImageDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertListOfImages(imageEntityList: List<ImageEntity>)
+    suspend fun insertListOfImages(filesEntityList: List<FilesEntity>)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertSingleImage(singleImageEntity: ImageEntity)
+    suspend fun insertSingleImage(singleFilesEntity: FilesEntity)
+
+    @Update(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun updateImageEntity(filesEntity: FilesEntity)
+
+    @Delete
+    suspend fun deleteImageEntity(filesEntity: FilesEntity)
 
     @Transaction
     @Query("Select * From ImageList")
-    fun getAllMessages(): Flow<List<ImageEntity>>
+    fun getAllFiles(): Flow<List<FilesEntity>>
+
+    @Query("Select * From ImageList where imageStarred = 1")
+    fun getAllStarredFiles(): Flow<List<FilesEntity>>
 
     @Query("Select * from ImageList where id = :imageId")
-    fun getSpecificImageDetails(imageId: Int) : Flow<ImageEntity>
+    fun getSpecificImageDetails(imageId: Int) : Flow<FilesEntity>
 }
