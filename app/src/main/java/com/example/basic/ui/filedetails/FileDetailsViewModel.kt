@@ -1,4 +1,4 @@
-package com.example.basic.ui.pdf
+package com.example.basic.ui.filedetails
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -13,10 +13,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
-class PDFViewModel(application: Application) : AndroidViewModel(application) {
+class FileDetailsViewModel(application: Application) : AndroidViewModel(application) {
+
     private val repository: ImageRepository
-    private var _imageDetails = MutableStateFlow(FilesEntity("", "", "", 0, ""))
-    var imageDetails = _imageDetails.asStateFlow()
+    private var _fileDetails = MutableStateFlow(FilesEntity("", "", "", 0, ""))
+    var fileDetails = _fileDetails.asStateFlow()
 
     init {
         val dao = ImageDatabase.getDatabase(application).getImageDao()
@@ -25,7 +26,7 @@ class PDFViewModel(application: Application) : AndroidViewModel(application) {
 
     fun getSpecificFileDetails(imageId: Int) = viewModelScope.launch(Dispatchers.IO) {
         repository.getSpecificFileDetails(imageId).collectLatest {
-            _imageDetails.value = it
+            _fileDetails.value = it
         }
     }
 }

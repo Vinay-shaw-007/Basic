@@ -4,6 +4,9 @@
     <string name="title_dashboard">Dashboard</string>
     <string name="title_notifications">Notifications</string>
     <string name="select_images">Select Images</string>
+    <string name="starred">Starred</string>
+    <string name="details">Files</string>
+    <string name="file_details">File Details</string>
 
     <string name="permission_required">Media access is required to display the Gallery preview.</string>
     <string name="ok">OK</string>
@@ -57,5 +60,5 @@
         libero vel nunc consequat, quis tincidunt nisl eleifend. Cras bibendum enim a justo luctus
         vestibulum. Fusce dictum libero quis erat maximus, vitae volutpat diam dignissim.
     </string>
-    <string name="starred">Starred</string>
+
 </resources>

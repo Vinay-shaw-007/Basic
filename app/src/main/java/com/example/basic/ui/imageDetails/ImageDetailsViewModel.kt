@@ -23,7 +23,7 @@ class ImageDetailsViewModel(application: Application) : AndroidViewModel(applica
     }
 
     fun getSpecificImageDetails(imageId: Int) = viewModelScope.launch(Dispatchers.Default) {
-        repository.getSpecificImageDetails(imageId).collectLatest {
+        repository.getSpecificFileDetails(imageId).collectLatest {
             _imageDetails.value = it
         }
     }

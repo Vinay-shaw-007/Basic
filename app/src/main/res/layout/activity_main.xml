@@ -8,6 +8,7 @@
     <include
         android:id="@+id/appBarMain"
         layout="@layout/app_bar_main"
+        android:elevation="10dp"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         app:layout_constraintEnd_toEndOf="parent"

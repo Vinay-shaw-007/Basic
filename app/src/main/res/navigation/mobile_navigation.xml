@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@+id/navigation_home">
+    app:startDestination="@+id/navigation_Details">
 
     <fragment
         android:id="@+id/navigation_home"
@@ -16,9 +16,7 @@
         <action
             android:id="@+id/action_navigation_home_to_PDFFragment"
             app:destination="@id/PDFFragment" />
-        <action
-            android:id="@+id/action_navigation_home_to_videoFragment"
-            app:destination="@id/videoFragment" />
+
         <action
             android:id="@+id/action_navigation_home_to_videoPlayerActivity"
             app:destination="@id/videoPlayerActivity" />
@@ -34,7 +32,7 @@
     <fragment
         android:id="@+id/navigation_notifications"
         android:name="com.example.basic.ui.notifications.NotificationsFragment"
-        android:label="@string/title_notifications"
+        android:label="@string/starred"
         tools:layout="@layout/fragment_notifications" />
     <fragment
         android:id="@+id/imageDetailsFragment"
@@ -76,15 +74,7 @@
             android:name="pdfID"
             app:argType="integer" />
     </fragment>
-    <fragment
-        android:id="@+id/videoFragment"
-        android:name="com.example.basic.ui.video.VideoFragment"
-        android:label="fragment_video"
-        tools:layout="@layout/fragment_video" >
-        <argument
-            android:name="videoUri"
-            app:argType="string" />
-    </fragment>
+
     <activity
         android:id="@+id/videoPlayerActivity"
         android:name="com.example.basic.ui.VideoPlayerActivity"
@@ -94,6 +84,27 @@
             android:name="videoUri"
             app:argType="string" />
     </activity>
+    <fragment
+        android:id="@+id/navigation_Details"
+        android:name="com.example.basic.ui.files.FilesFragment"
+        android:label="@string/details"
+        tools:layout="@layout/fragment_files" >
+        <action
+            android:id="@+id/action_navigation_Details_to_fileDetailsFragment"
+            app:destination="@id/fileDetailsFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/fileDetailsFragment"
+        android:name="com.example.basic.ui.filedetails.FileDetailsFragment"
+        android:label="@string/file_details"
+        tools:layout="@layout/fragment_file_details" >
+        <argument
+            android:name="fileID"
+            app:argType="integer" />
+        <action
+            android:id="@+id/action_fileDetailsFragment_to_imageDetailsDialog"
+            app:destination="@id/imageDetailsDialog" />
+    </fragment>
 
 
 </navigation>

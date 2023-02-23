@@ -3,10 +3,13 @@ package com.example.basic.ui.home
 import android.Manifest
 import android.app.Activity
 import android.content.ContentResolver
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.DocumentsContract
+import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Log
 import android.view.LayoutInflater
@@ -14,6 +17,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
@@ -32,12 +36,17 @@ import com.example.basic.Utils.VIDEO_FILE
 import com.example.basic.databinding.FragmentHomeBinding
 import com.example.basic.db.FilesEntity
 import com.karumi.dexter.Dexter
+import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.PermissionToken
 import com.karumi.dexter.listener.PermissionDeniedResponse
 import com.karumi.dexter.listener.PermissionGrantedResponse
 import com.karumi.dexter.listener.PermissionRequest
+import com.karumi.dexter.listener.multi.MultiplePermissionsListener
 import com.karumi.dexter.listener.single.PermissionListener
 import kotlinx.coroutines.flow.collectLatest
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.text.DecimalFormat
 
 
@@ -77,7 +86,8 @@ class HomeFragment : Fragment(), ImageRVAdapter {
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.S) {
                 selectImage()
             } else {
-                dexterRequestPermission()
+                dexter2()
+//                dexterRequestPermission()
             }
         }
 
@@ -98,9 +108,9 @@ class HomeFragment : Fragment(), ImageRVAdapter {
 
     private val requestFile = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
-    ) {
-        if (it.resultCode == Activity.RESULT_OK && it.data != null) {
-            val data = it.data
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK && result.data != null) {
+            val data = result.data
             data?.let {
                 if (data.clipData != null) {
                     //If multiple images chosen
@@ -108,7 +118,7 @@ class HomeFragment : Fragment(), ImageRVAdapter {
                     val imageList: ArrayList<FilesEntity> = ArrayList()
                     for (i in 0 until count) {
                         val imageUri = data.clipData!!.getItemAt(i).uri.toString()
-
+                        requireContext().contentResolver.takePersistableUriPermission(data.clipData!!.getItemAt(i).uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
                         imageList.add(getFileNameAndSize(imageUri))
                     }
                     homeViewModel.insertImageList(imageList)
@@ -116,12 +126,15 @@ class HomeFragment : Fragment(), ImageRVAdapter {
                 } else {
                     //If single image chosen
                     val imageUri = data.data.toString()
+                    data.data?.let { it1 ->
+                        requireContext().contentResolver.takePersistableUriPermission(
+                            it1, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
                     homeViewModel.insertSingleImage(getFileNameAndSize(imageUri))
                 }
             }
         }
     }
-
     private fun getFileType(contentResolver: ContentResolver, uri: Uri) : String {
         val mimeType = contentResolver.getType(uri)
         if (mimeType?.startsWith("image/") == true) {
@@ -135,6 +148,7 @@ class HomeFragment : Fragment(), ImageRVAdapter {
         }
         return ""
     }
+
 
     private fun getFileNameAndSize(imageUri: String): FilesEntity {
         val cursor =
@@ -157,6 +171,7 @@ class HomeFragment : Fragment(), ImageRVAdapter {
                 Log.d("Video Details", fileName.toString())
                 Log.d("Video Details", sizeInMbFormatted.toString())
                 Log.d("Video Details", fileType!!)
+
                 return FilesEntity(imageUri, fileName, sizeInMbFormatted, 0, fileType)
             }
         }
@@ -175,6 +190,7 @@ class HomeFragment : Fragment(), ImageRVAdapter {
             flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
             requestFile.launch(this)
         }
+
     }
 
 
@@ -203,6 +219,25 @@ class HomeFragment : Fragment(), ImageRVAdapter {
 
             })
             .check()
+    }
+
+    private fun dexter2() {
+        Dexter.withContext(activity)
+            .withPermissions(
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.MANAGE_DOCUMENTS
+            ).withListener(object : MultiplePermissionsListener {
+                override fun onPermissionsChecked(report: MultiplePermissionsReport) {
+                    selectImage()
+                }
+
+                override fun onPermissionRationaleShouldBeShown(
+                    permissions: List<PermissionRequest>,
+                    token: PermissionToken
+                ) {
+                    token.continuePermissionRequest()
+                }
+            }).check()
     }
 
 
@@ -271,24 +306,6 @@ class HomeFragment : Fragment(), ImageRVAdapter {
     }
 
     override fun onPdfClicked(filesEntity: FilesEntity) {
-//        val uri = filesEntity.imageUri.toUri()
-//        val contentResolver = context?.contentResolver
-//        val inputStream = contentResolver?.openInputStream(uri)
-//        val file = File.createTempFile("pdf", ".pdf", context?.cacheDir)
-//        val outputStream = FileOutputStream(file)
-//        inputStream?.copyTo(outputStream)
-//
-//        val intent = Intent(Intent.ACTION_VIEW)
-//        val uri1 = Uri.fromFile(file)
-//        intent.setDataAndType(uri1, "application/pdf")
-//        intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_CLEAR_TOP
-//
-//        try {
-//            startActivity(intent)
-//        } catch (e: ActivityNotFoundException) {
-//            // Handle the error
-//            Log.d("OpenPDF", e.message.toString())
-//        }
         findNavController().navigate(HomeFragmentDirections.actionNavigationHomeToPDFFragment(filesEntity.id))
     }
 

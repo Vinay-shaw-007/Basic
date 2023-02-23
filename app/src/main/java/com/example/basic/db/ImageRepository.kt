@@ -23,7 +23,7 @@ class ImageRepository(private val imageDao: ImageDao) {
         imageDao.deleteImageEntity(filesEntity)
     }
 
-    fun getSpecificImageDetails(imageId: Int): Flow<FilesEntity> {
-        return imageDao.getSpecificImageDetails(imageId)
+    fun getSpecificFileDetails(imageId: Int): Flow<FilesEntity> {
+        return imageDao.getSpecificFileDetails(imageId)
     }
 }

@@ -34,13 +34,17 @@ class MainActivity : AppCompatActivity() {
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         appBarConfiguration = AppBarConfiguration(setOf(
-                R.id.navigation_home, R.id.navigation_dashboard, R.id.navigation_notifications))
+            R.id.navigation_Details, R.id.navigation_dashboard, R.id.navigation_notifications))
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
         navController.addOnDestinationChangedListener { _, destination, _ ->
             when (destination.label) {
                 getString(R.string.image_details) -> {
+                    binding.appBarMain.filterMain.isVisible = true
+                    binding.appBarMain.filterMain.setImageResource(R.drawable.info_24)
+                }
+                getString(R.string.file_details) -> {
                     binding.appBarMain.filterMain.isVisible = true
                     binding.appBarMain.filterMain.setImageResource(R.drawable.info_24)
                 }

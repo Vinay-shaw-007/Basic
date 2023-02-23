@@ -24,6 +24,6 @@ interface ImageDao {
     @Query("Select * From ImageList where imageStarred = 1")
     fun getAllStarredFiles(): Flow<List<FilesEntity>>
 
-    @Query("Select * from ImageList where id = :imageId")
-    fun getSpecificImageDetails(imageId: Int) : Flow<FilesEntity>
+    @Query("Select * from ImageList where id = :fileId")
+    fun getSpecificFileDetails(fileId: Int) : Flow<FilesEntity>
 }

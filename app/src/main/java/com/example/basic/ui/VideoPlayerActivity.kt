@@ -1,14 +1,22 @@
 package com.example.basic.ui
 
+import android.content.Intent
+import android.database.Cursor
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.navigation.navArgs
-import androidx.navigation.ui.AppBarConfiguration
 import com.example.basic.databinding.ActivityVideoPlayerBinding
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
+import com.google.android.exoplayer2.source.ProgressiveMediaSource
+import com.google.android.exoplayer2.upstream.FileDataSource
+
 
 class VideoPlayerActivity : AppCompatActivity() {
 
@@ -25,8 +33,8 @@ class VideoPlayerActivity : AppCompatActivity() {
 
         binding = ActivityVideoPlayerBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
         initializePlayer(argument.videoUri)
+        Log.d("videoUri", argument.videoUri)
 
     }
 
@@ -39,10 +47,6 @@ class VideoPlayerActivity : AppCompatActivity() {
         player.play()
     }
 
-    override fun onStop() {
-        super.onStop()
-        player.release()
-    }
 
     override fun onDestroy() {
         super.onDestroy()

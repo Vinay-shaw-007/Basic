@@ -1,22 +1,27 @@
 package com.example.basic.ui.pdf
 
 import android.content.Context
+import android.database.Cursor
 import android.net.Uri
-import androidx.lifecycle.ViewModelProvider
+import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
-import androidx.fragment.app.Fragment
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.FileProvider
 import androidx.core.net.toUri
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.navArgs
 import com.example.basic.databinding.FragmentPDFBinding
 import kotlinx.coroutines.flow.collectLatest
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 
 class PDFFragment : Fragment() {
@@ -38,18 +43,86 @@ class PDFFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        viewModel.getSpecificImageDetails(arguments.pdfID)
-
+        viewModel.getSpecificFileDetails(arguments.pdfID)
         viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.imageDetails.collectLatest {
+                viewModel.imageDetails.collectLatest { it ->
                     if (it.imageUri.isNotEmpty()) {
-//                        setPDf(it.imageUri)
+                        binding.pdfView.fromUri(it.imageUri.toUri()).load()
+//                        var filePath: String? = null
+//                        val _uri: Uri = it.imageUri.toUri()
+//                        Log.d("", "URI = $_uri")
+//                        if ("content" == _uri.scheme) {
+//                            val cursor: Cursor = requireContext().contentResolver.query(
+//                                _uri,
+//                                arrayOf<String>(MediaStore.Images.ImageColumns.DATA),
+//                                null,
+//                                null,
+//                                null
+//                            )
+//                            cursor.moveToFirst()
+//                            filePath = cursor.getString(0)
+//                            cursor.close()
+//                        } else {
+//                            filePath = _uri.path
+//                        }
+//                        binding.pdfView.fromUri(it.imageUri.toUri()).load()
+//                        context?.let {
+//                        val file = File("${it.getExternalFilesDir(null)}/Documents/newNehal's CV.pdf")
+//
+//                            val uri = FileProvider.getUriForFile(
+//                                it,
+//                                "${it.packageName}.fileprovider",
+//                                file
+//                            )
+//                            binding.pdfView.fromUri(uri).load()
+//                        }
+
+//                        if (file.exists()) {
+//                            binding.pdfView.fromFile(file).load()
+//                        }
+
                     }
                 }
             }
         }
     }
+
+    private fun getAbsolutePathFromUri(context: Context, uri: Uri): String? {
+        var absolutePath: String? = null
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // For Android 10 and above, use ContentResolver#openFileDescriptor and ParcelFileDescriptor#getFileDescriptor to get the absolute file path
+            val contentResolver = context.contentResolver
+            val fileDescriptor = contentResolver.openFileDescriptor(uri, "r")?.fileDescriptor
+            val inputStream = FileInputStream(fileDescriptor)
+            val file = File(context.cacheDir, "temp.pdf")
+            FileOutputStream(file).use { outputStream ->
+                val buffer = ByteArray(1024)
+                var read: Int = inputStream.read(buffer)
+                while (read != -1) {
+                    outputStream.write(buffer, 0, read)
+                    read = inputStream.read(buffer)
+                }
+                outputStream.flush()
+            }
+            absolutePath = file.absolutePath
+        } else {
+            // For Android 9 and below, use ContentResolver#query to get the absolute file path
+            val projection = arrayOf(MediaStore.Images.Media.DATA)
+            val cursor = context.contentResolver.query(uri, projection, null, null, null)
+            cursor?.let {
+                if (it.moveToFirst()) {
+                    val columnIndex = it.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+                    absolutePath = it.getString(columnIndex)
+                }
+                it.close()
+            }
+        }
+
+        return absolutePath
+    }
+
     private fun setPDf(uri: String) {
 
 // Get a content resolver instance
